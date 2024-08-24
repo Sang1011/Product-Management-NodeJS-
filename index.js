@@ -2,12 +2,19 @@ const express = require('express');
 // import express framework
 require("dotenv").config();
 
+const methodOverride = require('method-override')
+const bodyParser = require('body-parser');
+
 const database = require("./config/database");
 
 const systemConfig = require("./config/system");
 
 const app = express();
 // tạo 1 express application và lưu trữ vào app
+
+app.use(methodOverride('_method'));
+
+app.use(bodyParser.urlencoded({ extended: false }));
 
 const route = require("./routes/client/index.route");
 // import 1 module từ file... 
