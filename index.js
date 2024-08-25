@@ -4,6 +4,9 @@ require("dotenv").config();
 
 const methodOverride = require('method-override')
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+const flash = require("express-flash");
 
 const database = require("./config/database");
 
@@ -30,6 +33,14 @@ app.set("views", "./views");
 app.set("view engine", "pug");
 // để render HTML động bằng pug
 // khi gọi render thì express sẽ tìm file .pug
+
+// flash
+
+app.use(cookieParser("JKASDYQIWDJHHASD"));
+app.use(session({ cookie: { maxAge: 6000 } }));
+app.use(flash());
+
+// end flash
 
 //App Locals Variable
 app.locals.prefixAdmin = systemConfig.prefixAdmin;

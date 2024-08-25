@@ -8,6 +8,8 @@ const productSchema = new mongoose.Schema({
     stock: Number,
     thumbnail: String,
     deleted: Boolean,
+    deletedAt: Date,
+    position: Number,
     status: String
 });
 

@@ -3,7 +3,16 @@ const Product = require("../../models/products.model");
 const filterStatusHelper = require("../../helpers/filterStatus");
 const searchHelper = require("../../helpers/search");
 const paginationHelper = require("../../helpers/pagination");
-// [GET] /admin/products
+var updateSuccessInfo = () => {
+    return "Cập nhật trạng thái thành công!";
+}
+var updateSuccessManyInfo = (ids) => {
+    return `Cập nhật trạng thái ${ids.length} sản phẩm thành công!`;
+}
+var deleteSuccessInfo = (ids) => {
+        return `Xóa ${ids.length} sản phẩm thành công!`;
+    }
+    // [GET] /admin/products
 module.exports.product = async(reg, res) => {
 
 
@@ -34,7 +43,11 @@ module.exports.product = async(reg, res) => {
     if (reg.query.status) {
         find.status = reg.query.status;
     }
-    const products = await Product.find(find).limit(objectPagination.limitItems).skip(objectPagination.skip);
+    const products = await Product.find(find)
+        .sort({ position: "desc" })
+        .limit(objectPagination.limitItems)
+        .skip(objectPagination.skip);
+
 
     res.render("admin/pages/products/index", {
         pageTitle: "Danh sách sản phẩm",
@@ -45,7 +58,7 @@ module.exports.product = async(reg, res) => {
     });
 };
 
-// [GET] /admin/products/change-status/:status/:id
+// [PATCH] /admin/products/change-status/:status/:id
 module.exports.changeStatus = async(reg, res) => {
     const status = reg.params.status;
     const id = reg.params.id;
@@ -53,9 +66,12 @@ module.exports.changeStatus = async(reg, res) => {
 
     await Product.updateOne({ _id: id }, { status: status });
 
+    reg.flash("success", updateSuccessInfo());
+
     res.redirect('back');
 }
 
+// [PATCH] /admin/products/change-multi
 module.exports.changeMulti = async(reg, res) => {
     const type = reg.body.type;
     const ids = reg.body.ids.split(", ");
@@ -67,8 +83,30 @@ module.exports.changeMulti = async(reg, res) => {
         case "inactive":
             await Product.updateMany({ _id: { $in: ids } }, { status: "inactive" });
             break;
-        default:
+        case "delete-all":
+            await Product.updateMany({ _id: { $in: ids } }, { deleted: true, deletedAt: new Date() });
+            break;
+        case "change-position":
+            for (const item of ids) {
+                let [id, position] = item.split("-");
+                position = parseInt(position);
+                await Product.updateOne({ _id: id }, { position: position });
+            }
             break;
     }
+
+    reg.flash("success", updateSuccessManyInfo(ids));
+
+    res.redirect('back');
+}
+
+// [DELETE] /admin/products/delete/:id
+module.exports.delete = async(reg, res) => {
+    const id = reg.params.id;
+
+    // await Product.deleteOne({ _id: id });
+    await Product.updateOne({ _id: id }, { deleted: true, deletedAt: new Date() });
+
+    reg.flash("success", deleteSuccessInfo(ids));
     res.redirect('back');
 }
