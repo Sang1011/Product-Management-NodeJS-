@@ -3,14 +3,22 @@ const Product = require("../../models/products.model");
 const filterStatusHelper = require("../../helpers/filterStatus");
 const searchHelper = require("../../helpers/search");
 const paginationHelper = require("../../helpers/pagination");
+const systemConfig = require("../../config/system");
+
 var updateSuccessInfo = () => {
     return "Cập nhật trạng thái thành công!";
 }
 var updateSuccessManyInfo = (ids) => {
     return `Cập nhật trạng thái ${ids.length} sản phẩm thành công!`;
 }
-var deleteSuccessInfo = (ids) => {
-        return `Xóa ${ids.length} sản phẩm thành công!`;
+var deleteSuccessInfo = () => {
+    return "Xóa sản phẩm thành công!";
+}
+var deleteSuccessManyInfo = (ids) => {
+    return `Xóa ${ids.length} sản phẩm thành công!`;
+}
+var createSuccessInfo = () => {
+        return "Tạo sản phẩm thành công!";
     }
     // [GET] /admin/products
 module.exports.product = async(reg, res) => {
@@ -79,12 +87,15 @@ module.exports.changeMulti = async(reg, res) => {
     switch (type) {
         case "active":
             await Product.updateMany({ _id: { $in: ids } }, { status: "active" });
+            reg.flash("success", updateSuccessManyInfo(ids));
             break;
         case "inactive":
             await Product.updateMany({ _id: { $in: ids } }, { status: "inactive" });
+            reg.flash("success", updateSuccessManyInfo(ids));
             break;
         case "delete-all":
             await Product.updateMany({ _id: { $in: ids } }, { deleted: true, deletedAt: new Date() });
+            reg.flash("success", deleteSuccessManyInfo(ids));
             break;
         case "change-position":
             for (const item of ids) {
@@ -92,10 +103,10 @@ module.exports.changeMulti = async(reg, res) => {
                 position = parseInt(position);
                 await Product.updateOne({ _id: id }, { position: position });
             }
+            reg.flash("success", updateSuccessManyInfo(ids));
             break;
     }
 
-    reg.flash("success", updateSuccessManyInfo(ids));
 
     res.redirect('back');
 }
@@ -107,6 +118,34 @@ module.exports.delete = async(reg, res) => {
     // await Product.deleteOne({ _id: id });
     await Product.updateOne({ _id: id }, { deleted: true, deletedAt: new Date() });
 
-    reg.flash("success", deleteSuccessInfo(ids));
+    reg.flash("success", deleteSuccessInfo(id));
     res.redirect('back');
 }
+
+// [GET] /admin/products/create
+module.exports.create = async(reg, res) => {
+    res.render("admin/pages/products/create", {
+        pageTitle: "Thêm mới sản phẩm",
+    });
+};
+
+// [POST] /admin/products/create
+module.exports.createPost = async(reg, res) => {
+    reg.body.price = parseInt(reg.body.price);
+    reg.body.stock = parseInt(reg.body.stock);
+    reg.body.discountPercentage = parseInt(reg.body.discountPercentage);
+
+    if (reg.body.position == "") {
+        const countProducts = await Product.countDocuments();
+        reg.body.position = countProducts + 1;
+    }
+
+    reg.body.thumbnail = `/uploads/${reg.file.filename}`;
+
+    const product = new Product(reg.body);
+    await Product.insertMany([product]);
+
+    reg.flash("success", createSuccessInfo());
+
+    res.redirect(`${systemConfig.prefixAdmin}/products`);
+};
