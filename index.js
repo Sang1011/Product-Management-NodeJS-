@@ -2,6 +2,10 @@ const express = require('express');
 // import express framework
 require("dotenv").config();
 
+import { injectSpeedInsights } from '@vercel/speed-insights';
+
+injectSpeedInsights();
+
 const methodOverride = require('method-override')
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');

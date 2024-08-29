@@ -1,5 +1,9 @@
 // trang điều hướng chính
 
+import { injectSpeedInsights } from '@vercel/speed-insights';
+
+injectSpeedInsights();
+
 const productRouter = require("./products.route");
 const homeRouter = require("./home.route");
 
