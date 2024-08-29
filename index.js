@@ -27,7 +27,7 @@ const routeAdmin = require("./routes/admin/index.route");
 
 database.connect();
 
-app.set("views", "./views");
+app.set("views", `${__dirname}/views`);
 // đường dẫn nơi pug đc lưu trữ
 // để express biết nơi tìm file khi render
 
@@ -46,7 +46,9 @@ app.use(flash());
 //App Locals Variable
 app.locals.prefixAdmin = systemConfig.prefixAdmin;
 
-app.use(express.static("public"));
+app.use(express.static(`${__dirname}/public`));
+
+console.log(__dirname);
 
 //Routes
 route(app);
