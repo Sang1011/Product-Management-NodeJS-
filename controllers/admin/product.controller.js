@@ -18,7 +18,10 @@ var deleteSuccessManyInfo = (ids) => {
     return `Xóa ${ids.length} sản phẩm thành công!`;
 }
 var createSuccessInfo = () => {
-        return "Tạo sản phẩm thành công!";
+    return "Tạo sản phẩm thành công!";
+}
+var titleErrorInfo = () => {
+        return "Vui lòng nhập tiêu đề cho sản phẩm";
     }
     // [GET] /admin/products
 module.exports.product = async(reg, res) => {
@@ -44,6 +47,15 @@ module.exports.product = async(reg, res) => {
         countProducts
     );
 
+    const products = await Product.find(find)
+        .sort({ position: "desc" })
+        .limit(objectPagination.limitItems)
+        .skip(objectPagination.skip);
+
+
+
+
+
     if (objectSearch.regex) {
         find.title = objectSearch.regex;
     }
@@ -51,10 +63,7 @@ module.exports.product = async(reg, res) => {
     if (reg.query.status) {
         find.status = reg.query.status;
     }
-    const products = await Product.find(find)
-        .sort({ position: "desc" })
-        .limit(objectPagination.limitItems)
-        .skip(objectPagination.skip);
+
 
 
     res.render("admin/pages/products/index", {
@@ -131,6 +140,7 @@ module.exports.create = async(reg, res) => {
 
 // [POST] /admin/products/create
 module.exports.createPost = async(reg, res) => {
+
     reg.body.price = parseInt(reg.body.price);
     reg.body.stock = parseInt(reg.body.stock);
     reg.body.discountPercentage = parseInt(reg.body.discountPercentage);
@@ -138,9 +148,12 @@ module.exports.createPost = async(reg, res) => {
     if (reg.body.position == "") {
         const countProducts = await Product.countDocuments();
         reg.body.position = countProducts + 1;
+    } else {
+        reg.body.position = parseInt(reg.body.position);
     }
-
-    reg.body.thumbnail = `/uploads/${reg.file.filename}`;
+    if (reg.file) {
+        reg.body.thumbnail = `/uploads/${reg.file.filename}`;
+    }
 
     const product = new Product(reg.body);
     await Product.insertMany([product]);
@@ -149,3 +162,48 @@ module.exports.createPost = async(reg, res) => {
 
     res.redirect(`${systemConfig.prefixAdmin}/products`);
 };
+
+// [GET] /admin/products/edit/:id
+module.exports.edit = async(reg, res) => {
+    try {
+        const find = {
+            deleted: false,
+            _id: reg.params.id
+        };
+
+        const product = await Product.findOne(find);
+
+        res.render("admin/pages/products/edit", {
+            pageTitle: "Chỉnh sửa sản phẩm sản phẩm",
+            product: product
+        });
+    } catch (error) {
+        reg.flash("error", "Sản phẩm không tồn tại");
+        res.redirect(`${systemConfig.prefixAdmin}/products`)
+    }
+};
+
+// [PATCH] /admin/products/edit/:id
+module.exports.editPatch = async(reg, res) => {
+    const id = reg.params.id;
+    reg.body.price = parseInt(reg.body.price);
+    reg.body.stock = parseInt(reg.body.stock);
+    reg.body.discountPercentage = parseInt(reg.body.discountPercentage);
+    reg.body.position = parseInt(reg.body.position);
+
+    if (reg.file) {
+        reg.body.thumbnail = `/uploads/${reg.file.filename}`;
+    }
+
+    try {
+
+        await Product.updateOne({ _id: id }, reg.body);
+
+        reg.flash("success", "Cập nhật sản phẩm thành công");
+
+        res.redirect(`${systemConfig.prefixAdmin}/products`);
+    } catch (error) {
+        reg.flash("error", "Cập nhật sản phẩm thất bại");
+        res.redirect("back");
+    }
+}
